@@ -37,6 +37,28 @@ After dependencies are installed, the shorter Windows command is:
 .\run.ps1
 ```
 
+## Deploy on Render
+
+The repository includes [`render.yaml`](render.yaml) for a Render Blueprint deployment.
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/nikskhore/software-match-intelligence-portal)
+
+The Blueprint creates a Python web service in Singapore, deploys automatically from
+`main`, checks `/api/health`, and registers `portal.lean2automate.com` as the custom
+domain.
+
+After Render creates the service:
+
+1. Copy the service hostname shown by Render, such as
+   `lean2automate-software-portal.onrender.com`.
+2. In GoDaddy DNS, add a `CNAME` record with name `portal` and value set to that
+   Render hostname.
+3. Return to Render's **Settings > Custom Domains** section and verify the domain.
+
+The free service filesystem is ephemeral. Excel data is regenerated after service
+replacement or restart, so use a persistent disk or migrate the repository layer to
+MySQL before using the portal for production data.
+
 The workbook is created at `backend/data/portal_data.xlsx`. If it is missing, the
 backend creates it automatically.
 

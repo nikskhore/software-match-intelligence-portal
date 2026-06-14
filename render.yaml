@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: lean2automate-software-portal
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    domains:
+      - portal.lean2automate.com
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
