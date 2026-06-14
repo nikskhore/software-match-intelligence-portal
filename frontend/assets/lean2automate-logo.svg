@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 136" role="img" aria-label="lean2automate logo with saffron Om symbol">
+  <defs>
+    <linearGradient id="mark-stroke" x1="24" y1="18" x2="236" y2="106" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#17202a"/>
+      <stop offset=".42" stop-color="#0f766e"/>
+      <stop offset=".74" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#c0840f"/>
+    </linearGradient>
+    <linearGradient id="word-fill" x1="268" y1="24" x2="650" y2="86" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#17202a"/>
+      <stop offset=".5" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#17202a"/>
+    </linearGradient>
+  </defs>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28 25v70h52" stroke="#17202a" stroke-width="14"/>
+    <path d="M49 78c26-33 55-47 86-41 23 5 42 21 58 48" stroke="url(#mark-stroke)" stroke-width="8"/>
+    <path d="M91 38c8-14 21-21 39-21 20 0 34 11 34 26 0 12-9 23-26 33l-34 19h65" stroke="url(#mark-stroke)" stroke-width="12"/>
+    <path d="M179 97l29-73 29 73M191 73h33" stroke="url(#mark-stroke)" stroke-width="12"/>
+    <path d="M76 95h128" stroke="rgba(23,32,42,.18)" stroke-width="4"/>
+    <circle cx="28" cy="95" r="6" fill="#0f766e"/>
+    <circle cx="80" cy="95" r="4" fill="#2563eb"/>
+    <circle cx="192" cy="86" r="6" fill="#c0840f"/>
+  </g>
+
+  <text x="116" y="76" text-anchor="middle" fill="#f97316" font-family="Nirmala UI, Mangal, Noto Sans Devanagari, Arial Unicode MS, sans-serif" font-size="36" font-weight="900">&#x0950;</text>
+
+  <text x="268" y="59" fill="url(#word-fill)" font-family="Sora, Manrope, Arial, sans-serif" font-size="39" font-weight="900" letter-spacing="-1.3">lean2automate</text>
+  <text x="272" y="92" fill="#53616f" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="800" letter-spacing="2.2">AI ML DIGITAL TWIN AUTOMATION</text>
+  <path d="M268 109h392" stroke="#0f766e" stroke-width="3" stroke-linecap="round" opacity=".3"/>
+</svg>

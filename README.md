@@ -1,0 +1,106 @@
+# Software Match Intelligence Portal
+
+A full-stack prototype for managing a software resale inventory, receiving simulated
+customer inquiries, and ranking suitable products with explainable match scores.
+
+## Features
+
+- Dashboard for inventory value, licensing, maintenance, renewals, and utilization
+- Software inventory with INR/USD pricing and product metadata
+- Product-level revenue, pipeline, deal, and CRM synchronization metadata
+- Simulated email inbox for customer inquiries
+- Ranked software recommendations with score breakdowns and requirement gaps
+- Optional OpenAI analysis with a deterministic local matching fallback
+- Demo roles: Admin, Sales, Viewer, and Customer
+- Excel workbook used as the prototype database
+- Inventory CRUD, Excel import/export, and side-by-side product comparison
+- Sales opportunities, weighted forecasting, proposal PDFs, alerts, and audit logs
+- Configuration-gated Salesforce, Gmail, and Microsoft Outlook connectors
+
+## Run locally
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r backend\requirements.txt
+python backend\scripts\seed_workbook.py
+python -m uvicorn app.main:app --app-dir backend --reload
+```
+
+Open `http://127.0.0.1:8000`.
+
+After dependencies are installed, the shorter Windows command is:
+
+```powershell
+.\run.ps1
+```
+
+The workbook is created at `backend/data/portal_data.xlsx`. If it is missing, the
+backend creates it automatically.
+
+If `portal_data.xlsx` is open and locked by Microsoft Excel during a schema upgrade,
+the portal temporarily uses `backend/data/portal_data_extended.xlsx`. Close Excel
+and restart the portal to allow normal in-place migration.
+
+## Salesforce-ready commercial data
+
+Each software row includes synthetic lifetime revenue, current-year revenue, open
+pipeline, closed-won deals, open opportunities, a CRM product ID, and a last-sync
+date. These fields are structured for a future Salesforce integration:
+
+- `crm_product_id` maps to Salesforce `Product2`
+- Revenue and deal counts are aggregated from `Opportunity`
+- Product-specific revenue is linked through `OpportunityLineItem`
+
+The current prototype does not connect to a live Salesforce organization.
+
+## Connector configuration
+
+The portal runs all connector workflows in demo mode by default. Live credentials
+are supplied only through `.env`:
+
+```text
+SALESFORCE_INSTANCE_URL=
+SALESFORCE_ACCESS_TOKEN=
+GMAIL_CREDENTIALS_JSON=
+MICROSOFT_GRAPH_TOKEN=
+```
+
+Salesforce synchronization follows the `Product2`, `Opportunity`, and
+`OpportunityLineItem` model. Gmail ingestion is structured around message list/get,
+and Outlook ingestion is structured for Microsoft Graph mail resources.
+
+## Optional OpenAI configuration
+
+Create `.env` from `.env.example` and set a newly generated API key:
+
+```text
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+Never commit `.env`. The application works without a key by using the deterministic
+matching engine.
+
+## Demo users
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@lean2automate.demo | demo123 |
+| Sales | sales@lean2automate.demo | demo123 |
+| Viewer | viewer@lean2automate.demo | demo123 |
+| Customer | priya@apexbank.demo | demo123 |
+
+## API
+
+- `POST /api/auth/login`
+- `GET /api/dashboard`
+- `GET /api/software`
+- `GET /api/queries`
+- `POST /api/queries/{query_id}/analyze`
+- `GET /api/analyses/{query_id}`
+- `GET /api/insights`
+
+Authentication is intentionally demo-only. Replace it with password hashing, JWTs,
+and persistent sessions before production use. The repository boundary is designed
+so the Excel implementation can later be replaced by MySQL.
