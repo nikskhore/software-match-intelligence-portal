@@ -3,6 +3,8 @@
 A full-stack prototype for managing a software resale inventory, receiving simulated
 customer inquiries, and ranking suitable products with explainable match scores.
 
+**Company website:** [www.lean2automate.com](https://www.lean2automate.com)
+
 ## Features
 
 - Dashboard for inventory value, licensing, maintenance, renewals, and utilization
