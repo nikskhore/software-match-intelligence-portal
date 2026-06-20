@@ -662,26 +662,123 @@ function InsightDrawer({ item, user, close, status, applied }) {
 }
 
 function Insights({ user }) {
-  const [items, setItems] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [statuses, setStatuses] = useState({});
-  useEffect(() => { api("/insights", user).then(setItems); }, [user.id]);
-  const apply = async item => {
-    const result = await api(`/insights/${item.id}/apply`, user, { method: "POST" });
-    setStatuses({ ...statuses, [item.id]: result });
+  const [status, setStatus] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
+  const [anomalies, setAnomalies] = useState([]);
+  const [forecast, setForecast] = useState([]);
+  const [question, setQuestion] = useState("Compare our software inventory, license utilization, and vendors.");
+  const [answer, setAnswer] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [asking, setAsking] = useState(false);
+  const [error, setError] = useState("");
+  const load = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [statusData, analyticsData, recommendationData, anomalyData, forecastData] = await Promise.all([
+        api("/inventory-ai/status", user),
+        api("/inventory-ai/analytics", user),
+        api("/inventory-ai/recommendations", user),
+        api("/inventory-ai/anomalies", user),
+        api("/inventory-ai/forecast?horizon_days=90", user),
+      ]);
+      setStatus(statusData);
+      setAnalytics(analyticsData);
+      setRecommendations(recommendationData.recommendations || []);
+      setAnomalies(anomalyData.anomalies || []);
+      setForecast(forecastData.items || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+  useEffect(() => { load(); }, [user.id]);
+  const ask = async e => {
+    e.preventDefault();
+    if (!question.trim()) return;
+    setAsking(true);
+    setError("");
+    try {
+      setAnswer(await api("/inventory-ai/chat", user, {
+        method: "POST",
+        body: JSON.stringify({ question, include_reasoning: true, max_results: 15 }),
+      }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAsking(false);
+    }
+  };
+  if (loading) return h(Loader);
+  const healthy = status?.status === "healthy";
+  const forecastTotal = forecast.reduce((sum, item) => sum + Number(item.predicted_replacements || 0), 0);
   return h(React.Fragment, null,
-    h(Header, { title: "AI inventory advisor", subtitle: "Actionable portfolio recommendations grounded in inventory and demand.", user }),
+    h(Header, { title: "AI inventory advisor", subtitle: "Live answers, recommendations, anomalies, and forecasts from the inventory intelligence service.", user }),
     h("main", { className: "content" },
-      h("div", { className: "advisor-hero" }, h("div", null, h("div", { className: "eyebrow light" }, "WEEKLY PORTFOLIO BRIEF"), h("h2", null, "Your inventory is healthy, with three actions worth taking."), h("p", null, "Recommendations combine utilization, renewals, product coverage, and current inquiry demand.")), h("div", { className: "advisor-score" }, h("strong", null, "82"), h("span", null, "Portfolio health"))),
-      h("div", { className: "advice-grid" }, items.map((item, i) => h("article", { className: `advice-card ${item.type}`, key: item.id },
-        h("div", { className: "advice-card-head" }, h("span", { className: "advice-number" }, `0${i + 1}`), h("span", { className: `priority-badge ${item.type}` }, item.priority)),
-        h("h3", null, item.title), h("p", null, item.message), h("strong", null, item.impact),
-        h("div", { className: "mini-evidence" }, item.evidence.slice(0, 2).map(row => h("span", { key: row.label }, h("small", null, row.label), h("b", null, row.value)))),
-        h("button", { onClick: () => setSelected(item) }, statuses[item.id] ? "View active action ->" : "Review recommendation ->")
-      )))
-    ),
-    h(InsightDrawer, { item: selected, user, close: () => setSelected(null), status: selected && statuses[selected.id], applied: apply })
+      h("div", { className: "advisor-hero live-ai-hero" },
+        h("div", null,
+          h("div", { className: "eyebrow light" }, "LIVE INVENTORY INTELLIGENCE"),
+          h("h2", null, healthy ? "Your AI service is online and grounded in indexed inventory data." : "The AI service needs attention."),
+          h("p", null, healthy ? "Ask operational questions or review live recommendations, anomalies, and replacement forecasts." : (error || "Check the inventory AI service configuration."))
+        ),
+        h("div", { className: `advisor-score ${healthy ? "healthy" : "degraded"}` },
+          h("strong", null, healthy ? "LIVE" : "OFF"),
+          h("span", null, `${status?.pending_jobs || 0} pending jobs`)
+        )
+      ),
+      error && h("div", { className: "ai-error" }, error, h("button", { onClick: load }, "Retry")),
+      h("section", { className: "ai-metrics" },
+        h(MetricCard, { label: "Assets indexed", value: analytics?.assets_total || 0, meta: `${analytics?.assets_available || 0} currently available`, icon: "inventory" }),
+        h(MetricCard, { label: "Unused license seats", value: analytics?.unused_license_seats || 0, meta: "Potential optimization capacity", tone: "blue", icon: "spark" }),
+        h(MetricCard, { label: "Missing assets", value: analytics?.assets_missing || 0, meta: "Records requiring investigation", tone: "violet", icon: "search" }),
+        h(MetricCard, { label: "90-day replacements", value: forecastTotal, meta: `${forecast.length} forecast categories`, tone: "green", icon: "dashboard" })
+      ),
+      h("section", { className: "ai-workspace-grid" },
+        h("form", { className: "panel ai-chat-panel", onSubmit: ask },
+          h("div", { className: "panel-title" }, h("div", null, h("h3", null, "Ask the inventory AI"), h("p", null, "Answers use indexed assets, software, licenses, and vendors.")), h("span", { className: "pill" }, "RAG")),
+          h("textarea", { value: question, onChange: e => setQuestion(e.target.value), rows: 4, placeholder: "Ask about inventory, licenses, vendors, anomalies, or forecasts..." }),
+          h("button", { className: "primary", type: "submit", disabled: asking }, asking ? "Analyzing..." : "Ask AI"),
+          answer && h("div", { className: "ai-answer" },
+            h("div", { className: "ai-answer-meta" }, h("strong", null, answer.intent), h("span", null, `${Math.round(answer.confidence * 100)}% confidence`)),
+            h("p", null, answer.answer),
+            answer.reasoning?.length > 0 && h("ul", null, answer.reasoning.map(item => h("li", { key: item }, item))),
+            answer.citations?.length > 0 && h("div", { className: "citation-list" }, answer.citations.map(item =>
+              h("span", { key: `${item.source}:${item.record_id}` }, `${item.source}: ${item.label}`)
+            ))
+          )
+        ),
+        h("div", { className: "panel" },
+          h("div", { className: "panel-title" }, h("div", null, h("h3", null, "Recommended actions"), h("p", null, "Generated from current inventory analytics"))),
+          h("div", { className: "live-advice-list" }, recommendations.length ? recommendations.map((item, index) =>
+            h("div", { key: `${item.action}-${index}`, className: `live-advice ${item.priority || "medium"}` },
+              h("span", null, String(item.priority || "medium").toUpperCase()),
+              h("strong", null, item.action),
+              h("small", null, `${item.quantity || 0} affected`)
+            )
+          ) : h("p", { className: "empty-state" }, "No recommendations currently require action."))
+        )
+      ),
+      h("section", { className: "ai-workspace-grid" },
+        h("div", { className: "panel" },
+          h("div", { className: "panel-title" }, h("div", null, h("h3", null, "Detected anomalies"), h("p", null, "Rule and statistical checks over inventory data"))),
+          h("div", { className: "live-advice-list" }, anomalies.length ? anomalies.map(item =>
+            h("div", { key: `${item.type}:${item.record_id}`, className: `live-advice ${item.severity}` },
+              h("span", null, item.severity.toUpperCase()),
+              h("strong", null, item.type.replaceAll("_", " ")),
+              h("small", null, item.detail)
+            )
+          ) : h("p", { className: "empty-state" }, "No anomalies detected."))
+        ),
+        h("div", { className: "panel" },
+          h("div", { className: "panel-title" }, h("div", null, h("h3", null, "Replacement forecast"), h("p", null, "Assets due within the next 90 days"))),
+          h("div", { className: "forecast-list" }, forecast.length ? forecast.map(item =>
+            h("div", { key: item.category }, h("span", null, item.category), h("strong", null, item.predicted_replacements))
+          ) : h("p", { className: "empty-state" }, "No replacements are scheduled in this period."))
+        )
+      )
+    )
   );
 }
 
