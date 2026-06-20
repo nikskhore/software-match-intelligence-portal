@@ -35,6 +35,48 @@ def test_role_aware_analysis_flow(tmp_path: Path):
     assert saved.json()["matches"][0]["software_name"] == "SecureFlow IAM"
 
 
+def test_inventory_ai_bridge(tmp_path: Path, monkeypatch):
+    workbook = tmp_path / "portal_data.xlsx"
+    create_workbook(workbook)
+    main.repository = ExcelRepository(workbook)
+    calls = []
+
+    def fake_request(method, path, user, *, params=None, json_body=None):
+        calls.append((method, path, user["id"], params, json_body))
+        if path == "/ai/status":
+            return {"status": "healthy", "pending_jobs": 0}
+        if path == "/ai/chat":
+            return {
+                "answer": "Inventory answer",
+                "intent": "inventory_lookup",
+                "confidence": 0.9,
+                "reasoning": [],
+                "recommendations": [],
+                "citations": [],
+                "conversation_id": "00000000-0000-0000-0000-000000000000",
+                "generated_at": "2026-06-15T00:00:00Z",
+            }
+        return {}
+
+    monkeypatch.setattr(main, "inventory_ai_request", fake_request)
+    client = TestClient(main.app)
+    headers = {"X-User-Id": "USR-002"}
+
+    status = client.get("/api/inventory-ai/status", headers=headers)
+    chat = client.post(
+        "/api/inventory-ai/chat",
+        headers=headers,
+        json={"question": "What is available?", "max_results": 8},
+    )
+
+    assert status.status_code == 200
+    assert status.json()["status"] == "healthy"
+    assert chat.status_code == 200
+    assert chat.json()["answer"] == "Inventory answer"
+    assert calls[-1][1] == "/ai/chat"
+    assert calls[-1][4]["question"] == "What is available?"
+
+
 def test_growth_operations_and_admin_workflows(tmp_path: Path):
     workbook = tmp_path / "portal_data.xlsx"
     create_workbook(workbook)

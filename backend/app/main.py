@@ -3,6 +3,10 @@ from __future__ import annotations
 import json
 import os
 import io
+import base64
+import hashlib
+import hmac
+import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any
@@ -12,6 +16,7 @@ from fastapi import Body, Depends, FastAPI, File, Header, HTTPException, UploadF
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+import httpx
 
 from .ai_service import analyze_query
 from .models import AnalysisResponse, FeedbackPayload, LoginRequest, OpportunityPayload, PurchaseOrderPayload, RoiPayload, SoftwarePayload, User
@@ -43,6 +48,7 @@ def workbook_path() -> Path:
 
 
 repository = ExcelRepository(workbook_path())
+INVENTORY_AI_URL = os.getenv("INVENTORY_AI_URL", "http://127.0.0.1:8000").rstrip("/")
 
 app = FastAPI(title="Software Match Intelligence Portal", version="1.0.0")
 app.add_middleware(
@@ -70,9 +76,114 @@ def public_user(user: dict) -> dict:
     return {key: user.get(key) for key in ["id", "name", "email", "role", "customer_id"]}
 
 
+def inventory_ai_token(user: dict) -> str:
+    secret = os.getenv("INVENTORY_AI_JWT_SECRET", "").strip()
+    if not secret:
+        raise HTTPException(503, "Inventory AI JWT secret is not configured")
+    role_map = {"admin": "admin", "sales": "manager", "viewer": "viewer", "customer": "viewer"}
+    now_value = int(time.time())
+    header = {"alg": "HS256", "typ": "JWT"}
+    payload = {
+        "sub": f"portal:{user['id']}",
+        "role": role_map.get(user["role"], "viewer"),
+        "iat": now_value,
+        "exp": now_value + 3600,
+    }
+
+    def encode(value: dict) -> str:
+        raw = json.dumps(value, separators=(",", ":")).encode()
+        return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
+
+    signing_input = f"{encode(header)}.{encode(payload)}"
+    signature = hmac.new(secret.encode(), signing_input.encode(), hashlib.sha256).digest()
+    return f"{signing_input}.{base64.urlsafe_b64encode(signature).rstrip(b'=').decode()}"
+
+
+def inventory_ai_request(
+    method: str,
+    path: str,
+    user: dict,
+    *,
+    params: dict[str, Any] | None = None,
+    json_body: dict[str, Any] | None = None,
+) -> Any:
+    try:
+        response = httpx.request(
+            method,
+            f"{INVENTORY_AI_URL}{path}",
+            params=params,
+            json=json_body,
+            headers={"Authorization": f"Bearer {inventory_ai_token(user)}"},
+            timeout=45,
+        )
+        response.raise_for_status()
+        return response.json()
+    except httpx.ConnectError as exc:
+        raise HTTPException(503, "Inventory AI service is not running") from exc
+    except httpx.HTTPStatusError as exc:
+        detail = exc.response.text
+        try:
+            detail = exc.response.json().get("detail", detail)
+        except ValueError:
+            pass
+        raise HTTPException(exc.response.status_code, detail) from exc
+
+
 @app.get("/api/health")
 def health() -> dict:
     return {"status": "ok", "storage": "excel", "ai_enabled": bool(os.getenv("OPENAI_API_KEY"))}
+
+
+@app.get("/api/inventory-ai/status")
+def inventory_ai_status(user: dict = Depends(current_user)) -> dict:
+    return inventory_ai_request("GET", "/ai/status", user)
+
+
+@app.post("/api/inventory-ai/chat")
+def inventory_ai_chat(payload: dict[str, Any] = Body(...), user: dict = Depends(current_user)) -> dict:
+    return inventory_ai_request("POST", "/ai/chat", user, json_body=payload)
+
+
+@app.get("/api/inventory-ai/analytics")
+def inventory_ai_analytics(user: dict = Depends(current_user)) -> dict:
+    return inventory_ai_request("GET", "/ai/analytics", user)
+
+
+@app.get("/api/inventory-ai/recommendations")
+def inventory_ai_recommendations(user: dict = Depends(current_user)) -> dict:
+    return inventory_ai_request("GET", "/ai/recommendations", user)
+
+
+@app.get("/api/inventory-ai/anomalies")
+def inventory_ai_anomalies(user: dict = Depends(current_user)) -> dict:
+    return inventory_ai_request("GET", "/ai/anomalies", user)
+
+
+@app.get("/api/inventory-ai/forecast")
+def inventory_ai_forecast(
+    horizon_days: int = 90,
+    user: dict = Depends(current_user),
+) -> dict:
+    return inventory_ai_request(
+        "GET",
+        "/ai/forecast",
+        user,
+        params={"horizon_days": horizon_days},
+    )
+
+
+@app.get("/api/inventory-ai/reports")
+def inventory_ai_reports(
+    horizon_days: int = 90,
+    user: dict = Depends(current_user),
+) -> dict:
+    require_role(user, "admin", "sales")
+    return inventory_ai_request(
+        "GET",
+        "/ai/reports",
+        user,
+        params={"horizon_days": horizon_days},
+    )
 
 
 @app.post("/api/auth/login", response_model=User)

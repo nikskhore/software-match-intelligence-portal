@@ -371,6 +371,32 @@ h1, h2, h3 { font-family: "Sora", "Manrope", sans-serif; }
 .advice-card p { color: var(--muted); font-size: 10px; line-height: 1.6; min-height: 64px; }
 .advice-card > strong { color: var(--blue); font-size: 10px; }
 .advice-card button { display: block; margin-top: 24px; border: 0; background: transparent; padding: 0; color: #5f6c82; font-size: 9px; font-weight: 700; }
+.live-ai-hero .advisor-score.healthy { color: #72e4cf; border-color: #72e4cf; }
+.live-ai-hero .advisor-score.degraded { color: #ff8d9b; border-color: #ff8d9b; }
+.ai-error { margin-top: 14px; padding: 12px 14px; border: 1px solid #ffd0d5; border-radius: 8px; background: #fff3f4; color: #a92d3b; font-size: 9px; }
+.ai-error button { float: right; border: 0; background: transparent; color: inherit; font-weight: 800; cursor: pointer; }
+.ai-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; }
+.ai-workspace-grid { display: grid; grid-template-columns: 1.35fr .65fr; gap: 18px; margin-top: 18px; }
+.ai-chat-panel textarea { width: 100%; resize: vertical; border: 1px solid var(--line); border-radius: 8px; padding: 12px; font: 500 10px "Manrope"; color: var(--ink); background: #fbfcfe; margin-bottom: 10px; }
+.ai-chat-panel > button { min-width: 110px; }
+.ai-answer { margin-top: 16px; border: 1px solid #cfe8e3; border-radius: 10px; padding: 16px; background: #f4fbf9; }
+.ai-answer-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; text-transform: capitalize; }
+.ai-answer-meta strong { font-size: 10px; color: var(--green); }
+.ai-answer-meta span { font-size: 8px; color: var(--muted); }
+.ai-answer p { font-size: 10px; line-height: 1.65; color: #45566c; white-space: pre-wrap; }
+.ai-answer ul { margin: 10px 0; padding-left: 18px; color: #66758a; font-size: 8px; line-height: 1.6; }
+.citation-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.citation-list span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 99px; padding: 5px 8px; color: #256b62; background: #dff4ef; font-size: 7px; }
+.live-advice-list { display: grid; gap: 9px; }
+.live-advice { display: grid; grid-template-columns: 58px 1fr; gap: 5px 10px; border-left: 3px solid var(--orange); border-radius: 7px; background: #fffaf4; padding: 11px; }
+.live-advice.high { border-color: var(--red); background: #fff5f6; }
+.live-advice.low { border-color: var(--green); background: #f1faf7; }
+.live-advice span { color: var(--orange); font-size: 7px; font-weight: 800; }
+.live-advice.high span { color: var(--red); }
+.live-advice strong { font-size: 9px; }
+.live-advice small { grid-column: 2; color: var(--muted); font-size: 8px; line-height: 1.5; }
+.forecast-list { display: grid; gap: 9px; }
+.forecast-list > div { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 9px 0; text-transform: capitalize; font-size: 9px; }
 .mini-evidence { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 17px; }
 .mini-evidence span { background: #f3f7f8; border-radius: 6px; padding: 8px; }
 .mini-evidence small, .mini-evidence b { display: block; }
@@ -478,6 +504,8 @@ h1, h2, h3 { font-family: "Sora", "Manrope", sans-serif; }
   .topbar p, .ai-status { display: none; }
   .content { padding: 20px; }
   .dashboard-grid, .commercial-grid, .lower-grid, .advice-grid { grid-template-columns: 1fr; }
+  .ai-metrics { grid-template-columns: 1fr 1fr; }
+  .ai-workspace-grid { grid-template-columns: 1fr; }
   .ops-grid, .admin-grid { grid-template-columns: 1fr; }
   .procurement-grid, .plan-grid { grid-template-columns: 1fr; }
   .roi-panel { grid-template-columns: 1fr; }
@@ -516,6 +544,7 @@ h1, h2, h3 { font-family: "Sora", "Manrope", sans-serif; }
   .product-detail-heading { display: block; }
   .product-detail-heading .status { display: inline-block; margin-bottom: 10px; }
   .ops-kpis { grid-template-columns: 1fr; }
+  .ai-metrics { grid-template-columns: 1fr; }
   .toolbar { flex-wrap: wrap; }
   .admin-list > div, .settings-list label { grid-template-columns: 1fr; }
   .procurement-row { grid-template-columns: 1fr 1fr; }

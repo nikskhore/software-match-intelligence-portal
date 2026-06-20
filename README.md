@@ -31,6 +31,14 @@ python -m uvicorn app.main:app --app-dir backend --reload
 
 Open `http://127.0.0.1:8000`.
 
+The inventory AI service runs separately on port `8000`, so the integrated portal now runs on:
+
+```text
+http://127.0.0.1:8080
+```
+
+Start the inventory AI service first from `C:\D\LLM_Software_Inventory`, then run this portal.
+
 After dependencies are installed, the shorter Windows command is:
 
 ```powershell
@@ -105,6 +113,32 @@ OPENAI_MODEL=gpt-4.1-mini
 
 Never commit `.env`. The application works without a key by using the deterministic
 matching engine.
+
+## Inventory AI integration
+
+The portal backend securely proxies the inventory AI service. Browser code never receives the AI
+JWT secret. Configure these values in the portal `.env`:
+
+```text
+INVENTORY_AI_URL=http://127.0.0.1:8000
+INVENTORY_AI_JWT_SECRET=<same JWT_SECRET used by the inventory AI service>
+```
+
+Run both applications in separate terminals:
+
+```powershell
+# Terminal 1
+cd C:\D\LLM_Software_Inventory
+powershell.exe -ExecutionPolicy Bypass -File .\scripts\start-native.ps1
+
+# Terminal 2
+cd C:\D\software-match-intelligence-portal-main
+powershell.exe -ExecutionPolicy Bypass -File .\run.ps1
+```
+
+Open `http://127.0.0.1:8080`, sign in, and select **AI insights**. The screen shows live inventory
+analytics, recommendations, anomalies, replacement forecasts, citations, and conversational RAG
+answers from the inventory AI service.
 
 ## Demo users
 
